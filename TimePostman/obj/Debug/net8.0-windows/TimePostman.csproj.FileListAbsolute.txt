@@ -1,0 +1,16 @@
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.Form1.resources
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.csproj.GenerateResource.cache
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.AssemblyInfoInputs.cache
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.AssemblyInfo.cs
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.csproj.CoreCompileInputs.cache
+C:\Users\User\Desktop\TimePostman\TimePostman\bin\Debug\net8.0-windows\TimePostman.exe
+C:\Users\User\Desktop\TimePostman\TimePostman\bin\Debug\net8.0-windows\TimePostman.deps.json
+C:\Users\User\Desktop\TimePostman\TimePostman\bin\Debug\net8.0-windows\TimePostman.runtimeconfig.json
+C:\Users\User\Desktop\TimePostman\TimePostman\bin\Debug\net8.0-windows\TimePostman.dll
+C:\Users\User\Desktop\TimePostman\TimePostman\bin\Debug\net8.0-windows\TimePostman.pdb
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.dll
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\refint\TimePostman.dll
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.pdb
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.genruntimeconfig.cache
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\ref\TimePostman.dll
