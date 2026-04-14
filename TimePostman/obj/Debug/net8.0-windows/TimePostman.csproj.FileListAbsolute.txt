@@ -14,3 +14,4 @@ C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\refint\Ti
 C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.pdb
 C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.genruntimeconfig.cache
 C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\ref\TimePostman.dll
+C:\Users\User\Desktop\TimePostman\TimePostman\obj\Debug\net8.0-windows\TimePostman.sourcelink.json

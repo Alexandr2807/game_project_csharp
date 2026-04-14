@@ -22,6 +22,9 @@ namespace TimePostman
         int playerH = 28;
         int speed = 4;
 
+        int startPlayerX = 150;
+        int startPlayerY = 300;
+
         bool up = false;
         bool down = false;
         bool left = false;
@@ -40,10 +43,16 @@ namespace TimePostman
         int phaseTimerMs = 0;
         int phaseDurationMs = 20000;
 
+        int matchTimerMs = 0;
+        int matchDurationMs = 300000; // 5 минут
+
         string statusMessage = "Добро пожаловать. Подходи к дому и нажимай E.";
         int statusMessageTimerMs = 0;
 
         int currentNearbyHouseIndex = -1;
+
+        bool gameWon = false;
+        bool gameLost = false;
 
         public Form1()
         {
@@ -108,15 +117,13 @@ namespace TimePostman
             houseNames.Add("Дом 6");
             houseColors.Add(Color.FromArgb(200, 145, 205));
 
-            letters.Add(new LetterItem("Письмо для Дома 1", 0, new List<TimePhase> { TimePhase.Morning }));
-            letters.Add(new LetterItem("Письмо для Дома 2", 1, new List<TimePhase> { TimePhase.Day }));
-            letters.Add(new LetterItem("Письмо для Дома 3", 2, new List<TimePhase> { TimePhase.Evening }));
-            letters.Add(new LetterItem("Письмо для Дома 4", 3, new List<TimePhase> { TimePhase.Night }));
-            letters.Add(new LetterItem("Письмо для Дома 5", 4, new List<TimePhase> { TimePhase.Day, TimePhase.Evening }));
-            letters.Add(new LetterItem("Письмо для Дома 6", 5, new List<TimePhase> { TimePhase.Morning, TimePhase.Night }));
+            startPlayerX = leftRoadX + 25;
+            startPlayerY = 300;
 
-            playerX = leftRoadX + 25;
-            playerY = 300;
+            FillLetters();
+
+            playerX = startPlayerX;
+            playerY = startPlayerY;
 
             CreateTrees();
 
@@ -126,6 +133,44 @@ namespace TimePostman
 
             this.KeyDown += Form1_KeyDown;
             this.KeyUp += Form1_KeyUp;
+        }
+
+        private void FillLetters()
+        {
+            letters.Clear();
+
+            letters.Add(new LetterItem("Письмо для Дома 1", 0, new List<TimePhase> { TimePhase.Morning }));
+            letters.Add(new LetterItem("Письмо для Дома 2", 1, new List<TimePhase> { TimePhase.Day }));
+            letters.Add(new LetterItem("Письмо для Дома 3", 2, new List<TimePhase> { TimePhase.Evening }));
+            letters.Add(new LetterItem("Письмо для Дома 4", 3, new List<TimePhase> { TimePhase.Night }));
+            letters.Add(new LetterItem("Письмо для Дома 5", 4, new List<TimePhase> { TimePhase.Day, TimePhase.Evening }));
+            letters.Add(new LetterItem("Письмо для Дома 6", 5, new List<TimePhase> { TimePhase.Morning, TimePhase.Night }));
+        }
+
+        private void ResetGame()
+        {
+            up = false;
+            down = false;
+            left = false;
+            right = false;
+
+            playerX = startPlayerX;
+            playerY = startPlayerY;
+
+            currentPhase = TimePhase.Morning;
+            phaseTimerMs = 0;
+
+            matchTimerMs = 0;
+
+            gameWon = false;
+            gameLost = false;
+
+            currentNearbyHouseIndex = -1;
+
+            statusMessage = "Игра перезапущена. Подходи к дому и нажимай E.";
+            statusMessageTimerMs = 2500;
+
+            FillLetters();
         }
 
         private void CreateTrees()
@@ -149,21 +194,42 @@ namespace TimePostman
 
         private void Timer_Tick(object? sender, EventArgs e)
         {
-            int dx = 0;
-            int dy = 0;
-
-            if (up) dy -= speed;
-            if (down) dy += speed;
-            if (left) dx -= speed;
-            if (right) dx += speed;
-
-            MovePlayer(dx, dy);
-
-            phaseTimerMs += timer.Interval;
-            if (phaseTimerMs >= phaseDurationMs)
+            if (!gameWon && !gameLost)
             {
-                phaseTimerMs = 0;
-                NextPhase();
+                int dx = 0;
+                int dy = 0;
+
+                if (up) dy -= speed;
+                if (down) dy += speed;
+                if (left) dx -= speed;
+                if (right) dx += speed;
+
+                MovePlayer(dx, dy);
+
+                phaseTimerMs += timer.Interval;
+                if (phaseTimerMs >= phaseDurationMs)
+                {
+                    phaseTimerMs = 0;
+                    NextPhase();
+                }
+
+                matchTimerMs += timer.Interval;
+                if (matchTimerMs >= matchDurationMs)
+                {
+                    matchTimerMs = matchDurationMs;
+                    gameLost = true;
+                    statusMessage = "Время вышло. Нажми R, чтобы начать заново.";
+                    statusMessageTimerMs = 0;
+                }
+
+                currentNearbyHouseIndex = GetNearbyHouseIndex();
+
+                if (GetDeliveredCount() == letters.Count)
+                {
+                    gameWon = true;
+                    statusMessage = "Все письма доставлены! Нажми R, чтобы сыграть еще раз.";
+                    statusMessageTimerMs = 0;
+                }
             }
 
             if (statusMessageTimerMs > 0)
@@ -172,11 +238,13 @@ namespace TimePostman
                 if (statusMessageTimerMs <= 0)
                 {
                     statusMessageTimerMs = 0;
-                    statusMessage = "Подойди к дому и нажми E.";
+
+                    if (!gameWon && !gameLost)
+                    {
+                        statusMessage = "Подойди к дому и нажми E.";
+                    }
                 }
             }
-
-            currentNearbyHouseIndex = GetNearbyHouseIndex();
 
             Invalidate();
         }
@@ -278,6 +346,11 @@ namespace TimePostman
 
         private void TryInteract()
         {
+            if (gameWon || gameLost)
+            {
+                return;
+            }
+
             int houseIndex = GetNearbyHouseIndex();
 
             if (houseIndex == -1)
@@ -310,6 +383,13 @@ namespace TimePostman
                 currentLetter.Delivered = true;
                 statusMessage = "Письмо доставлено: " + houseNames[houseIndex];
                 statusMessageTimerMs = 2500;
+
+                if (GetDeliveredCount() == letters.Count)
+                {
+                    gameWon = true;
+                    statusMessage = "Все письма доставлены! Нажми R, чтобы сыграть еще раз.";
+                    statusMessageTimerMs = 0;
+                }
             }
             else
             {
@@ -350,6 +430,13 @@ namespace TimePostman
             return count;
         }
 
+        private int GetMatchSecondsLeft()
+        {
+            int left = (matchDurationMs - matchTimerMs) / 1000;
+            if (left < 0) left = 0;
+            return left;
+        }
+
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.W || e.KeyCode == Keys.Up) up = true;
@@ -360,6 +447,11 @@ namespace TimePostman
             if (e.KeyCode == Keys.E)
             {
                 TryInteract();
+            }
+
+            if (e.KeyCode == Keys.R)
+            {
+                ResetGame();
             }
         }
 
@@ -381,6 +473,11 @@ namespace TimePostman
             DrawMap(g);
             DrawPlayer(g);
             DrawUI(g);
+
+            if (gameWon || gameLost)
+            {
+                DrawEndOverlay(g);
+            }
         }
 
         private void DrawMap(Graphics g)
@@ -478,7 +575,7 @@ namespace TimePostman
                     g.FillRectangle(roofBrush, roof);
                     g.DrawRectangle(Pens.Black, roof);
 
-                    if (i == currentNearbyHouseIndex)
+                    if (i == currentNearbyHouseIndex && !gameWon && !gameLost)
                     {
                         using (Pen nearPen = new Pen(Color.Yellow, 3))
                         {
@@ -500,6 +597,11 @@ namespace TimePostman
 
         private void DrawPlayer(Graphics g)
         {
+            if (gameWon || gameLost)
+            {
+                return;
+            }
+
             Rectangle player = new Rectangle(playerX, playerY, playerW, playerH);
 
             g.FillRectangle(Brushes.RoyalBlue, player);
@@ -532,7 +634,7 @@ namespace TimePostman
                 g.DrawString("Почтальон времени", titleFont, titleBrush, x, y);
                 y += 46;
 
-                g.DrawString("Неделя 1 + Неделя 2", blockFont, goldBrush, x, y);
+                g.DrawString("Неделя 3", blockFont, goldBrush, x, y);
                 y += 38;
 
                 g.DrawString("Время суток:", blockFont, titleBrush, x, y);
@@ -543,7 +645,10 @@ namespace TimePostman
                 int secLeft = (phaseDurationMs - phaseTimerMs) / 1000;
                 if (secLeft < 0) secLeft = 0;
 
-                g.DrawString("До смены: " + secLeft + " сек", textFont, textBrush, x, y);
+                g.DrawString("До смены фазы: " + secLeft + " сек", textFont, textBrush, x, y);
+                y += 24;
+
+                g.DrawString("До конца игры: " + GetMatchSecondsLeft() + " сек", textFont, textBrush, x, y);
                 y += 36;
 
                 g.DrawString("Управление:", blockFont, titleBrush, x, y);
@@ -551,6 +656,8 @@ namespace TimePostman
                 g.DrawString("WASD / стрелки", textFont, textBrush, x, y);
                 y += 22;
                 g.DrawString("E - доставить письмо", textFont, textBrush, x, y);
+                y += 22;
+                g.DrawString("R - рестарт", textFont, textBrush, x, y);
                 y += 36;
 
                 g.DrawString("Письма:", blockFont, titleBrush, x, y);
@@ -586,6 +693,51 @@ namespace TimePostman
                 g.DrawString("X = " + playerX, textFont, textBrush, x, y);
                 y += 22;
                 g.DrawString("Y = " + playerY, textFont, textBrush, x, y);
+            }
+        }
+
+        private void DrawEndOverlay(Graphics g)
+        {
+            using (Brush darkBrush = new SolidBrush(Color.FromArgb(150, 0, 0, 0)))
+            using (Brush panelBrush = new SolidBrush(Color.FromArgb(235, 30, 30, 40)))
+            using (Brush titleBrush = new SolidBrush(Color.White))
+            using (Brush textBrush = new SolidBrush(Color.Gainsboro))
+            using (Brush accentBrush = new SolidBrush(gameWon ? Color.LightGreen : Color.Salmon))
+            using (Font titleFont = new Font("Arial", 24, FontStyle.Bold))
+            using (Font textFont = new Font("Arial", 12, FontStyle.Regular))
+            using (Font bigFont = new Font("Arial", 16, FontStyle.Bold))
+            {
+                g.FillRectangle(darkBrush, gameArea);
+
+                Rectangle panel = new Rectangle(
+                    gameArea.X + gameArea.Width / 2 - 220,
+                    gameArea.Y + gameArea.Height / 2 - 110,
+                    440,
+                    220
+                );
+
+                g.FillRectangle(panelBrush, panel);
+                g.DrawRectangle(Pens.White, panel);
+
+                string title = gameWon ? "ПОБЕДА" : "ПОРАЖЕНИЕ";
+                string line1 = gameWon
+                    ? "Ты доставил все письма."
+                    : "Ты не успел доставить все письма.";
+                string line2 = "Нажми R, чтобы начать заново.";
+
+                StringFormat sf = new StringFormat();
+                sf.Alignment = StringAlignment.Center;
+                sf.LineAlignment = StringAlignment.Center;
+
+                Rectangle titleRect = new Rectangle(panel.X, panel.Y + 25, panel.Width, 40);
+                Rectangle line1Rect = new Rectangle(panel.X + 20, panel.Y + 85, panel.Width - 40, 30);
+                Rectangle line2Rect = new Rectangle(panel.X + 20, panel.Y + 135, panel.Width - 40, 30);
+                Rectangle statRect = new Rectangle(panel.X + 20, panel.Y + 175, panel.Width - 40, 25);
+
+                g.DrawString(title, titleFont, accentBrush, titleRect, sf);
+                g.DrawString(line1, bigFont, titleBrush, line1Rect, sf);
+                g.DrawString(line2, textFont, textBrush, line2Rect, sf);
+                g.DrawString("Доставлено: " + GetDeliveredCount() + " / " + letters.Count, textFont, textBrush, statRect, sf);
             }
         }
     }
