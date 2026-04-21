@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\User\\Desktop\\TimePostman\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{AB9D1BC4-DB62-4F71-95EC-E0A5C6B818DF}|TestProject.Tests\\TestProject.Tests.csproj|c:\\users\\user\\desktop\\timepostman\\testproject.tests\\test1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AB9D1BC4-DB62-4F71-95EC-E0A5C6B818DF}|TestProject.Tests\\TestProject.Tests.csproj|solutionrelative:testproject.tests\\test1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{4B823C10-5888-7FE0-77BF-113756DBDB5C}|TimePostman\\TimePostman.csproj|c:\\users\\user\\desktop\\timepostman\\timepostman\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4B823C10-5888-7FE0-77BF-113756DBDB5C}|TimePostman\\TimePostman.csproj|solutionrelative:timepostman\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -23,19 +27,32 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Test1.cs",
+              "DocumentMoniker": "C:\\Users\\User\\Desktop\\TimePostman\\TestProject.Tests\\Test1.cs",
+              "RelativeDocumentMoniker": "TestProject.Tests\\Test1.cs",
+              "ToolTip": "C:\\Users\\User\\Desktop\\TimePostman\\TestProject.Tests\\Test1.cs",
+              "RelativeToolTip": "TestProject.Tests\\Test1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-21T12:16:04.481Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "Form1.cs",
               "DocumentMoniker": "C:\\Users\\User\\Desktop\\TimePostman\\TimePostman\\Form1.cs",
               "RelativeDocumentMoniker": "TimePostman\\Form1.cs",
               "ToolTip": "C:\\Users\\User\\Desktop\\TimePostman\\TimePostman\\Form1.cs",
               "RelativeToolTip": "TimePostman\\Form1.cs",
-              "ViewState": "AgIAAEoBAAAAAAAAAAAuwF4BAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAD4BAAAAAAAAAAAowF4BAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-31T11:28:45.804Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\User\\Desktop\\TimePostman\\TimePostman\\Program.cs",
               "RelativeDocumentMoniker": "TimePostman\\Program.cs",

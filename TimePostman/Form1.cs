@@ -37,28 +37,22 @@ namespace TimePostman
         List<Rectangle> roads = new List<Rectangle>();
         List<Rectangle> treeTops = new List<Rectangle>();
 
-        List<LetterItem> letters = new List<LetterItem>();
-
-        TimePhase currentPhase = TimePhase.Morning;
-        int phaseTimerMs = 0;
-        int phaseDurationMs = 20000;
-
-        int matchTimerMs = 0;
-        int matchDurationMs = 300000; // 5 минут
-
-        string statusMessage = "Добро пожаловать. Подходи к дому и нажимай E.";
-        int statusMessageTimerMs = 0;
-
         int currentNearbyHouseIndex = -1;
 
-        bool gameWon = false;
-        bool gameLost = false;
+        string statusMessage = "Курьер готов. Подходи к дому и нажимай E.";
+        int statusMessageTimerMs = 0;
+
+        bool testMode = true;
+
+        GameSession session;
 
         public Form1()
         {
             InitializeComponent();
 
-            this.Text = "Почтальон времени";
+            session = new GameSession(testMode);
+
+            this.Text = "Симулятор курьера";
             this.ClientSize = new Size(windowW, windowH);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -120,8 +114,6 @@ namespace TimePostman
             startPlayerX = leftRoadX + 25;
             startPlayerY = 300;
 
-            FillLetters();
-
             playerX = startPlayerX;
             playerY = startPlayerY;
 
@@ -135,18 +127,6 @@ namespace TimePostman
             this.KeyUp += Form1_KeyUp;
         }
 
-        private void FillLetters()
-        {
-            letters.Clear();
-
-            letters.Add(new LetterItem("Письмо для Дома 1", 0, new List<TimePhase> { TimePhase.Morning }));
-            letters.Add(new LetterItem("Письмо для Дома 2", 1, new List<TimePhase> { TimePhase.Day }));
-            letters.Add(new LetterItem("Письмо для Дома 3", 2, new List<TimePhase> { TimePhase.Evening }));
-            letters.Add(new LetterItem("Письмо для Дома 4", 3, new List<TimePhase> { TimePhase.Night }));
-            letters.Add(new LetterItem("Письмо для Дома 5", 4, new List<TimePhase> { TimePhase.Day, TimePhase.Evening }));
-            letters.Add(new LetterItem("Письмо для Дома 6", 5, new List<TimePhase> { TimePhase.Morning, TimePhase.Night }));
-        }
-
         private void ResetGame()
         {
             up = false;
@@ -157,20 +137,12 @@ namespace TimePostman
             playerX = startPlayerX;
             playerY = startPlayerY;
 
-            currentPhase = TimePhase.Morning;
-            phaseTimerMs = 0;
-
-            matchTimerMs = 0;
-
-            gameWon = false;
-            gameLost = false;
-
             currentNearbyHouseIndex = -1;
 
-            statusMessage = "Игра перезапущена. Подходи к дому и нажимай E.";
-            statusMessageTimerMs = 2500;
+            session.Reset();
 
-            FillLetters();
+            statusMessage = "Смена перезапущена. Доставляй заказы.";
+            statusMessageTimerMs = 2200;
         }
 
         private void CreateTrees()
@@ -194,7 +166,11 @@ namespace TimePostman
 
         private void Timer_Tick(object? sender, EventArgs e)
         {
-            if (!gameWon && !gameLost)
+            TimePhase oldPhase = session.CurrentPhase;
+            bool oldWon = session.GameWon;
+            bool oldLost = session.GameLost;
+
+            if (!session.GameWon && !session.GameLost)
             {
                 int dx = 0;
                 int dy = 0;
@@ -205,43 +181,40 @@ namespace TimePostman
                 if (right) dx += speed;
 
                 MovePlayer(dx, dy);
-
-                phaseTimerMs += timer.Interval;
-                if (phaseTimerMs >= phaseDurationMs)
-                {
-                    phaseTimerMs = 0;
-                    NextPhase();
-                }
-
-                matchTimerMs += timer.Interval;
-                if (matchTimerMs >= matchDurationMs)
-                {
-                    matchTimerMs = matchDurationMs;
-                    gameLost = true;
-                    statusMessage = "Время вышло. Нажми R, чтобы начать заново.";
-                    statusMessageTimerMs = 0;
-                }
-
                 currentNearbyHouseIndex = GetNearbyHouseIndex();
+            }
 
-                if (GetDeliveredCount() == letters.Count)
-                {
-                    gameWon = true;
-                    statusMessage = "Все письма доставлены! Нажми R, чтобы сыграть еще раз.";
-                    statusMessageTimerMs = 0;
-                }
+            session.AdvanceTime(timer.Interval);
+
+            if (!oldWon && session.GameWon)
+            {
+                statusMessage = "Все заказы доставлены. Отличная смена! Нажми R.";
+                statusMessageTimerMs = 0;
+            }
+
+            if (!oldLost && session.GameLost)
+            {
+                statusMessage = "Смена закончилась. Ты не успел закрыть все заказы. Нажми R.";
+                statusMessageTimerMs = 0;
+            }
+
+            if (oldPhase != session.CurrentPhase && !session.GameWon && !session.GameLost)
+            {
+                statusMessage = "Время сменилось: " + session.GetPhaseText(session.CurrentPhase);
+                statusMessageTimerMs = 2200;
             }
 
             if (statusMessageTimerMs > 0)
             {
                 statusMessageTimerMs -= timer.Interval;
+
                 if (statusMessageTimerMs <= 0)
                 {
                     statusMessageTimerMs = 0;
 
-                    if (!gameWon && !gameLost)
+                    if (!session.GameWon && !session.GameLost)
                     {
-                        statusMessage = "Подойди к дому и нажми E.";
+                        statusMessage = "Подойди к дому и нажми E, чтобы передать заказ.";
                     }
                 }
             }
@@ -295,37 +268,6 @@ namespace TimePostman
             return false;
         }
 
-        private void NextPhase()
-        {
-            if (currentPhase == TimePhase.Morning)
-            {
-                currentPhase = TimePhase.Day;
-            }
-            else if (currentPhase == TimePhase.Day)
-            {
-                currentPhase = TimePhase.Evening;
-            }
-            else if (currentPhase == TimePhase.Evening)
-            {
-                currentPhase = TimePhase.Night;
-            }
-            else
-            {
-                currentPhase = TimePhase.Morning;
-            }
-
-            statusMessage = "Время сменилось: " + GetPhaseText(currentPhase);
-            statusMessageTimerMs = 2500;
-        }
-
-        private string GetPhaseText(TimePhase phase)
-        {
-            if (phase == TimePhase.Morning) return "Утро";
-            if (phase == TimePhase.Day) return "День";
-            if (phase == TimePhase.Evening) return "Вечер";
-            return "Ночь";
-        }
-
         private int GetNearbyHouseIndex()
         {
             Rectangle player = new Rectangle(playerX, playerY, playerW, playerH);
@@ -346,95 +288,53 @@ namespace TimePostman
 
         private void TryInteract()
         {
-            if (gameWon || gameLost)
+            DeliveryAttemptResult result = session.TryDeliver(currentNearbyHouseIndex);
+
+            if (result == DeliveryAttemptResult.TooFar)
             {
-                return;
+                statusMessage = "Слишком далеко. Подойди ближе к дому.";
+                statusMessageTimerMs = 1800;
             }
-
-            int houseIndex = GetNearbyHouseIndex();
-
-            if (houseIndex == -1)
+            else if (result == DeliveryAttemptResult.NoOrder)
             {
-                statusMessage = "Подойди ближе к дому.";
-                statusMessageTimerMs = 2000;
-                return;
+                statusMessage = "Для этого адреса активных заказов уже нет.";
+                statusMessageTimerMs = 2200;
             }
-
-            LetterItem? currentLetter = null;
-
-            for (int i = 0; i < letters.Count; i++)
+            else if (result == DeliveryAttemptResult.WrongTime)
             {
-                if (letters[i].HouseIndex == houseIndex && !letters[i].Delivered)
+                DeliveryOrder? order = null;
+
+                for (int i = 0; i < session.Orders.Count; i++)
                 {
-                    currentLetter = letters[i];
-                    break;
+                    if (session.Orders[i].HouseIndex == currentNearbyHouseIndex && !session.Orders[i].Delivered)
+                    {
+                        order = session.Orders[i];
+                        break;
+                    }
                 }
-            }
 
-            if (currentLetter == null)
-            {
-                statusMessage = "Для этого дома письма уже нет.";
-                statusMessageTimerMs = 2000;
-                return;
-            }
-
-            if (currentLetter.CanDeliverNow(currentPhase))
-            {
-                currentLetter.Delivered = true;
-                statusMessage = "Письмо доставлено: " + houseNames[houseIndex];
-                statusMessageTimerMs = 2500;
-
-                if (GetDeliveredCount() == letters.Count)
+                if (order != null)
                 {
-                    gameWon = true;
-                    statusMessage = "Все письма доставлены! Нажми R, чтобы сыграть еще раз.";
+                    statusMessage = "Клиента нет дома. Доступно: " + session.GetAllowedPhasesText(order);
+                }
+                else
+                {
+                    statusMessage = "Сейчас заказ не принимается.";
+                }
+
+                statusMessageTimerMs = 3000;
+            }
+            else if (result == DeliveryAttemptResult.Delivered)
+            {
+                statusMessage = "Заказ доставлен: " + houseNames[currentNearbyHouseIndex];
+                statusMessageTimerMs = 2200;
+
+                if (session.GameWon)
+                {
+                    statusMessage = "Все заказы доставлены. Отличная смена! Нажми R.";
                     statusMessageTimerMs = 0;
                 }
             }
-            else
-            {
-                statusMessage = "Сейчас в доме никого нет. Нужное время: " + GetAllowedPhasesText(currentLetter);
-                statusMessageTimerMs = 3000;
-            }
-        }
-
-        private string GetAllowedPhasesText(LetterItem letter)
-        {
-            string text = "";
-
-            for (int i = 0; i < letter.AllowedPhases.Count; i++)
-            {
-                if (i > 0)
-                {
-                    text += ", ";
-                }
-
-                text += GetPhaseText(letter.AllowedPhases[i]);
-            }
-
-            return text;
-        }
-
-        private int GetDeliveredCount()
-        {
-            int count = 0;
-
-            for (int i = 0; i < letters.Count; i++)
-            {
-                if (letters[i].Delivered)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private int GetMatchSecondsLeft()
-        {
-            int left = (matchDurationMs - matchTimerMs) / 1000;
-            if (left < 0) left = 0;
-            return left;
         }
 
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
@@ -474,7 +374,7 @@ namespace TimePostman
             DrawPlayer(g);
             DrawUI(g);
 
-            if (gameWon || gameLost)
+            if (session.GameWon || session.GameLost)
             {
                 DrawEndOverlay(g);
             }
@@ -484,19 +384,19 @@ namespace TimePostman
         {
             Color phaseOverlayColor = Color.FromArgb(0, 0, 0);
 
-            if (currentPhase == TimePhase.Morning)
+            if (session.CurrentPhase == TimePhase.Morning)
             {
                 phaseOverlayColor = Color.FromArgb(30, 255, 220, 150);
             }
-            else if (currentPhase == TimePhase.Day)
+            else if (session.CurrentPhase == TimePhase.Day)
             {
                 phaseOverlayColor = Color.FromArgb(10, 255, 255, 180);
             }
-            else if (currentPhase == TimePhase.Evening)
+            else if (session.CurrentPhase == TimePhase.Evening)
             {
                 phaseOverlayColor = Color.FromArgb(45, 255, 170, 80);
             }
-            else if (currentPhase == TimePhase.Night)
+            else if (session.CurrentPhase == TimePhase.Night)
             {
                 phaseOverlayColor = Color.FromArgb(80, 40, 60, 120);
             }
@@ -575,7 +475,7 @@ namespace TimePostman
                     g.FillRectangle(roofBrush, roof);
                     g.DrawRectangle(Pens.Black, roof);
 
-                    if (i == currentNearbyHouseIndex && !gameWon && !gameLost)
+                    if (i == currentNearbyHouseIndex && !session.GameWon && !session.GameLost)
                     {
                         using (Pen nearPen = new Pen(Color.Yellow, 3))
                         {
@@ -597,7 +497,7 @@ namespace TimePostman
 
         private void DrawPlayer(Graphics g)
         {
-            if (gameWon || gameLost)
+            if (session.GameWon || session.GameLost)
             {
                 return;
             }
@@ -631,67 +531,68 @@ namespace TimePostman
                 int x = uiArea.X + 22;
                 int y = 28;
 
-                g.DrawString("Почтальон времени", titleFont, titleBrush, x, y);
+                g.DrawString("Симулятор курьера", titleFont, titleBrush, x, y);
                 y += 46;
 
-                g.DrawString("Неделя 3", blockFont, goldBrush, x, y);
-                y += 38;
+                g.DrawString("Неделя 4 / Тесты", blockFont, goldBrush, x, y);
+                y += 36;
+
+                g.DrawString("Режим:", blockFont, titleBrush, x, y);
+                y += 26;
+                g.DrawString(testMode ? "Тестовый" : "Обычный", textFont, textBrush, x, y);
+                y += 34;
 
                 g.DrawString("Время суток:", blockFont, titleBrush, x, y);
-                y += 28;
-                g.DrawString(GetPhaseText(currentPhase), textFont, textBrush, x, y);
-                y += 24;
+                y += 26;
+                g.DrawString(session.GetPhaseText(session.CurrentPhase), textFont, textBrush, x, y);
+                y += 22;
 
-                int secLeft = (phaseDurationMs - phaseTimerMs) / 1000;
-                if (secLeft < 0) secLeft = 0;
-
-                g.DrawString("До смены фазы: " + secLeft + " сек", textFont, textBrush, x, y);
-                y += 24;
-
-                g.DrawString("До конца игры: " + GetMatchSecondsLeft() + " сек", textFont, textBrush, x, y);
-                y += 36;
+                g.DrawString("До смены фазы: " + session.GetPhaseSecondsLeft() + " сек", textFont, textBrush, x, y);
+                y += 22;
+                g.DrawString("До конца смены: " + session.GetMatchSecondsLeft() + " сек", textFont, textBrush, x, y);
+                y += 34;
 
                 g.DrawString("Управление:", blockFont, titleBrush, x, y);
-                y += 28;
+                y += 26;
                 g.DrawString("WASD / стрелки", textFont, textBrush, x, y);
-                y += 22;
-                g.DrawString("E - доставить письмо", textFont, textBrush, x, y);
-                y += 22;
+                y += 20;
+                g.DrawString("E - отдать заказ", textFont, textBrush, x, y);
+                y += 20;
                 g.DrawString("R - рестарт", textFont, textBrush, x, y);
-                y += 36;
+                y += 34;
 
-                g.DrawString("Письма:", blockFont, titleBrush, x, y);
-                y += 28;
+                g.DrawString("Заказы:", blockFont, titleBrush, x, y);
+                y += 26;
 
-                for (int i = 0; i < letters.Count; i++)
+                for (int i = 0; i < session.Orders.Count; i++)
                 {
-                    string mark = letters[i].Delivered ? "[OK]" : "[ ]";
-                    Brush statusBrush = letters[i].Delivered ? goodBrush : badBrush;
+                    string mark = session.Orders[i].Delivered ? "[OK]" : "[ ]";
+                    Brush statusBrush = session.Orders[i].Delivered ? goodBrush : badBrush;
 
-                    g.DrawString(mark + " " + houseNames[letters[i].HouseIndex], smallFont, statusBrush, x, y);
+                    g.DrawString(mark + " " + houseNames[session.Orders[i].HouseIndex], smallFont, statusBrush, x, y);
                     y += 18;
 
-                    string times = "   " + GetAllowedPhasesText(letters[i]);
+                    string times = "   " + session.GetAllowedPhasesText(session.Orders[i]);
                     g.DrawString(times, smallFont, textBrush, x, y);
                     y += 22;
                 }
 
-                y += 8;
-                g.DrawString("Доставлено: " + GetDeliveredCount() + " / " + letters.Count, blockFont, goldBrush, x, y);
-                y += 38;
+                y += 6;
+                g.DrawString("Доставлено: " + session.GetDeliveredCount() + " / " + session.Orders.Count, blockFont, goldBrush, x, y);
+                y += 34;
 
                 g.DrawString("Статус:", blockFont, titleBrush, x, y);
-                y += 26;
+                y += 24;
 
-                Rectangle statusRect = new Rectangle(x, y, uiArea.Width - 45, 80);
+                Rectangle statusRect = new Rectangle(x, y, uiArea.Width - 45, 90);
                 g.DrawString(statusMessage, smallFont, textBrush, statusRect);
 
-                y += 92;
+                y += 98;
 
                 g.DrawString("Координаты:", blockFont, titleBrush, x, y);
-                y += 26;
+                y += 24;
                 g.DrawString("X = " + playerX, textFont, textBrush, x, y);
-                y += 22;
+                y += 20;
                 g.DrawString("Y = " + playerY, textFont, textBrush, x, y);
             }
         }
@@ -702,7 +603,7 @@ namespace TimePostman
             using (Brush panelBrush = new SolidBrush(Color.FromArgb(235, 30, 30, 40)))
             using (Brush titleBrush = new SolidBrush(Color.White))
             using (Brush textBrush = new SolidBrush(Color.Gainsboro))
-            using (Brush accentBrush = new SolidBrush(gameWon ? Color.LightGreen : Color.Salmon))
+            using (Brush accentBrush = new SolidBrush(session.GameWon ? Color.LightGreen : Color.Salmon))
             using (Font titleFont = new Font("Arial", 24, FontStyle.Bold))
             using (Font textFont = new Font("Arial", 12, FontStyle.Regular))
             using (Font bigFont = new Font("Arial", 16, FontStyle.Bold))
@@ -719,11 +620,11 @@ namespace TimePostman
                 g.FillRectangle(panelBrush, panel);
                 g.DrawRectangle(Pens.White, panel);
 
-                string title = gameWon ? "ПОБЕДА" : "ПОРАЖЕНИЕ";
-                string line1 = gameWon
-                    ? "Ты доставил все письма."
-                    : "Ты не успел доставить все письма.";
-                string line2 = "Нажми R, чтобы начать заново.";
+                string title = session.GameWon ? "СМЕНА ЗАКРЫТА" : "СМЕНА ПРОВАЛЕНА";
+                string line1 = session.GameWon
+                    ? "Ты доставил все заказы."
+                    : "Не все заказы были доставлены вовремя.";
+                string line2 = "Нажми R, чтобы начать новую смену.";
 
                 StringFormat sf = new StringFormat();
                 sf.Alignment = StringAlignment.Center;
@@ -737,7 +638,7 @@ namespace TimePostman
                 g.DrawString(title, titleFont, accentBrush, titleRect, sf);
                 g.DrawString(line1, bigFont, titleBrush, line1Rect, sf);
                 g.DrawString(line2, textFont, textBrush, line2Rect, sf);
-                g.DrawString("Доставлено: " + GetDeliveredCount() + " / " + letters.Count, textFont, textBrush, statRect, sf);
+                g.DrawString("Выполнено: " + session.GetDeliveredCount() + " / " + session.Orders.Count, textFont, textBrush, statRect, sf);
             }
         }
     }
