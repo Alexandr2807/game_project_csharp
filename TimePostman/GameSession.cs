@@ -42,12 +42,12 @@ namespace TimePostman
 
             Orders.Clear();
 
-            Orders.Add(new DeliveryOrder("Заказ для Дома 1", 0, new List<TimePhase> { TimePhase.Morning }));
-            Orders.Add(new DeliveryOrder("Заказ для Дома 2", 1, new List<TimePhase> { TimePhase.Day }));
-            Orders.Add(new DeliveryOrder("Заказ для Дома 3", 2, new List<TimePhase> { TimePhase.Evening }));
-            Orders.Add(new DeliveryOrder("Заказ для Дома 4", 3, new List<TimePhase> { TimePhase.Night }));
-            Orders.Add(new DeliveryOrder("Заказ для Дома 5", 4, new List<TimePhase> { TimePhase.Day, TimePhase.Evening }));
-            Orders.Add(new DeliveryOrder("Заказ для Дома 6", 5, new List<TimePhase> { TimePhase.Morning, TimePhase.Night }));
+            Orders.Add(new DeliveryOrder("Еда из кафе", 0, new List<TimePhase> { TimePhase.Morning }));
+            Orders.Add(new DeliveryOrder("Документы", 1, new List<TimePhase> { TimePhase.Day }));
+            Orders.Add(new DeliveryOrder("Продукты", 2, new List<TimePhase> { TimePhase.Evening }));
+            Orders.Add(new DeliveryOrder("Ночной заказ", 3, new List<TimePhase> { TimePhase.Night }));
+            Orders.Add(new DeliveryOrder("Посылка", 4, new List<TimePhase> { TimePhase.Day, TimePhase.Evening }));
+            Orders.Add(new DeliveryOrder("Срочная доставка", 5, new List<TimePhase> { TimePhase.Morning, TimePhase.Night }));
         }
 
         public void AdvanceTime(int deltaMs)

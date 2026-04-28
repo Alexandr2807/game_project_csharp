@@ -42,7 +42,8 @@ namespace TimePostman
         string statusMessage = "Курьер готов. Подходи к дому и нажимай E.";
         int statusMessageTimerMs = 0;
 
-        bool testMode = true;
+        bool testMode = false;
+        bool gameStarted = false;
 
         GameSession session;
 
@@ -140,8 +141,18 @@ namespace TimePostman
             currentNearbyHouseIndex = -1;
 
             session.Reset();
+            gameStarted = true;
 
-            statusMessage = "Смена перезапущена. Доставляй заказы.";
+            statusMessage = "Новая смена началась. Доставляй заказы.";
+            statusMessageTimerMs = 2200;
+        }
+
+        private void StartGame()
+        {
+            gameStarted = true;
+            playerX = startPlayerX;
+            playerY = startPlayerY;
+            statusMessage = "Смена началась. Подходи к дому и нажимай E.";
             statusMessageTimerMs = 2200;
         }
 
@@ -166,6 +177,12 @@ namespace TimePostman
 
         private void Timer_Tick(object? sender, EventArgs e)
         {
+            if (!gameStarted)
+            {
+                Invalidate();
+                return;
+            }
+
             TimePhase oldPhase = session.CurrentPhase;
             bool oldWon = session.GameWon;
             bool oldLost = session.GameLost;
@@ -188,13 +205,13 @@ namespace TimePostman
 
             if (!oldWon && session.GameWon)
             {
-                statusMessage = "Все заказы доставлены. Отличная смена! Нажми R.";
+                statusMessage = "Все заказы доставлены. Смена закрыта успешно.";
                 statusMessageTimerMs = 0;
             }
 
             if (!oldLost && session.GameLost)
             {
-                statusMessage = "Смена закончилась. Ты не успел закрыть все заказы. Нажми R.";
+                statusMessage = "Смена закончилась. Не все заказы были закрыты.";
                 statusMessageTimerMs = 0;
             }
 
@@ -286,8 +303,31 @@ namespace TimePostman
             return -1;
         }
 
+        private DeliveryOrder? GetNearbyOrder()
+        {
+            if (currentNearbyHouseIndex < 0)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < session.Orders.Count; i++)
+            {
+                if (session.Orders[i].HouseIndex == currentNearbyHouseIndex && !session.Orders[i].Delivered)
+                {
+                    return session.Orders[i];
+                }
+            }
+
+            return null;
+        }
+
         private void TryInteract()
         {
+            if (!gameStarted)
+            {
+                return;
+            }
+
             DeliveryAttemptResult result = session.TryDeliver(currentNearbyHouseIndex);
 
             if (result == DeliveryAttemptResult.TooFar)
@@ -331,7 +371,7 @@ namespace TimePostman
 
                 if (session.GameWon)
                 {
-                    statusMessage = "Все заказы доставлены. Отличная смена! Нажми R.";
+                    statusMessage = "Все заказы доставлены. Смена закрыта успешно.";
                     statusMessageTimerMs = 0;
                 }
             }
@@ -339,6 +379,12 @@ namespace TimePostman
 
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
+            if (!gameStarted && e.KeyCode == Keys.Enter)
+            {
+                StartGame();
+                return;
+            }
+
             if (e.KeyCode == Keys.W || e.KeyCode == Keys.Up) up = true;
             if (e.KeyCode == Keys.S || e.KeyCode == Keys.Down) down = true;
             if (e.KeyCode == Keys.A || e.KeyCode == Keys.Left) left = true;
@@ -372,9 +418,14 @@ namespace TimePostman
 
             DrawMap(g);
             DrawPlayer(g);
+            DrawInteractionHint(g);
             DrawUI(g);
 
-            if (session.GameWon || session.GameLost)
+            if (!gameStarted)
+            {
+                DrawStartOverlay(g);
+            }
+            else if (session.GameWon || session.GameLost)
             {
                 DrawEndOverlay(g);
             }
@@ -475,7 +526,7 @@ namespace TimePostman
                     g.FillRectangle(roofBrush, roof);
                     g.DrawRectangle(Pens.Black, roof);
 
-                    if (i == currentNearbyHouseIndex && !session.GameWon && !session.GameLost)
+                    if (i == currentNearbyHouseIndex && gameStarted && !session.GameWon && !session.GameLost)
                     {
                         using (Pen nearPen = new Pen(Color.Yellow, 3))
                         {
@@ -497,7 +548,7 @@ namespace TimePostman
 
         private void DrawPlayer(Graphics g)
         {
-            if (session.GameWon || session.GameLost)
+            if (!gameStarted || session.GameWon || session.GameLost)
             {
                 return;
             }
@@ -512,11 +563,56 @@ namespace TimePostman
             g.DrawRectangle(Pens.Black, bag);
         }
 
+        private void DrawInteractionHint(Graphics g)
+        {
+            if (!gameStarted || session.GameWon || session.GameLost)
+            {
+                return;
+            }
+
+            if (currentNearbyHouseIndex < 0)
+            {
+                return;
+            }
+
+            string hintText = "";
+            DeliveryOrder? order = GetNearbyOrder();
+
+            if (order == null)
+            {
+                hintText = "Здесь уже нет активных заказов.";
+            }
+            else if (order.CanDeliverNow(session.CurrentPhase))
+            {
+                hintText = "Нажми E, чтобы передать заказ.";
+            }
+            else
+            {
+                hintText = "Клиент принимает: " + session.GetAllowedPhasesText(order);
+            }
+
+            Rectangle hintRect = new Rectangle(
+                gameArea.X + 18,
+                gameArea.Bottom - 58,
+                gameArea.Width - 36,
+                38
+            );
+
+            using (Brush bg = new SolidBrush(Color.FromArgb(185, 25, 25, 35)))
+            using (Brush textBrush = new SolidBrush(Color.White))
+            using (Font font = new Font("Arial", 10, FontStyle.Bold))
+            {
+                g.FillRectangle(bg, hintRect);
+                g.DrawRectangle(Pens.White, hintRect);
+                g.DrawString(hintText, font, textBrush, new Rectangle(hintRect.X + 10, hintRect.Y + 9, hintRect.Width - 20, 20));
+            }
+        }
+
         private void DrawUI(Graphics g)
         {
             using (SolidBrush uiBrush = new SolidBrush(Color.FromArgb(36, 38, 54)))
             using (SolidBrush titleBrush = new SolidBrush(Color.White))
-            using (SolidBrush goldBrush = new SolidBrush(Color.Gold))
+            using (SolidBrush accentBrush = new SolidBrush(Color.Gold))
             using (SolidBrush textBrush = new SolidBrush(Color.Gainsboro))
             using (SolidBrush goodBrush = new SolidBrush(Color.LightGreen))
             using (SolidBrush badBrush = new SolidBrush(Color.Salmon))
@@ -528,72 +624,101 @@ namespace TimePostman
                 g.FillRectangle(uiBrush, uiArea);
                 g.DrawRectangle(Pens.Gray, uiArea);
 
-                int x = uiArea.X + 22;
-                int y = 28;
+                int x = uiArea.X + 20;
+                int y = 24;
 
                 g.DrawString("Симулятор курьера", titleFont, titleBrush, x, y);
-                y += 46;
+                y += 40;
 
-                g.DrawString("Неделя 4 / Тесты", blockFont, goldBrush, x, y);
-                y += 36;
-
-                g.DrawString("Режим:", blockFont, titleBrush, x, y);
-                y += 26;
-                g.DrawString(testMode ? "Тестовый" : "Обычный", textFont, textBrush, x, y);
+                g.DrawString("Финальная версия MVP", blockFont, accentBrush, x, y);
                 y += 34;
+
+                g.DrawString("Цель смены:", blockFont, titleBrush, x, y);
+                y += 24;
+                g.DrawString("Закрыть все заказы до конца времени.", smallFont, textBrush, new Rectangle(x, y, uiArea.Width - 40, 35));
+                y += 42;
 
                 g.DrawString("Время суток:", blockFont, titleBrush, x, y);
-                y += 26;
-                g.DrawString(session.GetPhaseText(session.CurrentPhase), textFont, textBrush, x, y);
-                y += 22;
+                y += 24;
+                g.DrawString(gameStarted ? session.GetPhaseText(session.CurrentPhase) : "-", textFont, textBrush, x, y);
+                y += 20;
 
-                g.DrawString("До смены фазы: " + session.GetPhaseSecondsLeft() + " сек", textFont, textBrush, x, y);
-                y += 22;
-                g.DrawString("До конца смены: " + session.GetMatchSecondsLeft() + " сек", textFont, textBrush, x, y);
-                y += 34;
+                g.DrawString("До смены фазы: " + (gameStarted ? session.GetPhaseSecondsLeft().ToString() : "-") + " сек", textFont, textBrush, x, y);
+                y += 20;
+                g.DrawString("До конца смены: " + (gameStarted ? session.GetMatchSecondsLeft().ToString() : "-") + " сек", textFont, textBrush, x, y);
+                y += 32;
 
                 g.DrawString("Управление:", blockFont, titleBrush, x, y);
-                y += 26;
+                y += 24;
                 g.DrawString("WASD / стрелки", textFont, textBrush, x, y);
-                y += 20;
-                g.DrawString("E - отдать заказ", textFont, textBrush, x, y);
-                y += 20;
-                g.DrawString("R - рестарт", textFont, textBrush, x, y);
-                y += 34;
+                y += 18;
+                g.DrawString("E - передать заказ", textFont, textBrush, x, y);
+                y += 18;
+                g.DrawString("R - новая смена", textFont, textBrush, x, y);
+                y += 28;
 
                 g.DrawString("Заказы:", blockFont, titleBrush, x, y);
-                y += 26;
+                y += 24;
 
                 for (int i = 0; i < session.Orders.Count; i++)
                 {
-                    string mark = session.Orders[i].Delivered ? "[OK]" : "[ ]";
-                    Brush statusBrush = session.Orders[i].Delivered ? goodBrush : badBrush;
+                    DeliveryOrder order = session.Orders[i];
+                    string mark = order.Delivered ? "[OK]" : "[ ]";
+                    Brush lineBrush = order.Delivered ? goodBrush : badBrush;
 
-                    g.DrawString(mark + " " + houseNames[session.Orders[i].HouseIndex], smallFont, statusBrush, x, y);
-                    y += 18;
-
-                    string times = "   " + session.GetAllowedPhasesText(session.Orders[i]);
-                    g.DrawString(times, smallFont, textBrush, x, y);
-                    y += 22;
+                    g.DrawString(mark + " " + order.Title, smallFont, lineBrush, x, y);
+                    y += 16;
+                    g.DrawString("   " + houseNames[order.HouseIndex] + " | " + session.GetAllowedPhasesText(order), smallFont, textBrush, x, y);
+                    y += 20;
                 }
 
-                y += 6;
-                g.DrawString("Доставлено: " + session.GetDeliveredCount() + " / " + session.Orders.Count, blockFont, goldBrush, x, y);
-                y += 34;
+                y += 4;
+                g.DrawString("Выполнено: " + session.GetDeliveredCount() + " / " + session.Orders.Count, blockFont, accentBrush, x, y);
+                y += 32;
 
                 g.DrawString("Статус:", blockFont, titleBrush, x, y);
-                y += 24;
+                y += 22;
 
-                Rectangle statusRect = new Rectangle(x, y, uiArea.Width - 45, 90);
+                Rectangle statusRect = new Rectangle(x, y, uiArea.Width - 40, 92);
                 g.DrawString(statusMessage, smallFont, textBrush, statusRect);
+            }
+        }
 
-                y += 98;
+        private void DrawStartOverlay(Graphics g)
+        {
+            using (Brush darkBrush = new SolidBrush(Color.FromArgb(170, 0, 0, 0)))
+            using (Brush panelBrush = new SolidBrush(Color.FromArgb(235, 28, 30, 44)))
+            using (Brush titleBrush = new SolidBrush(Color.White))
+            using (Brush accentBrush = new SolidBrush(Color.Gold))
+            using (Brush textBrush = new SolidBrush(Color.Gainsboro))
+            using (Font titleFont = new Font("Arial", 24, FontStyle.Bold))
+            using (Font subFont = new Font("Arial", 13, FontStyle.Bold))
+            using (Font textFont = new Font("Arial", 11))
+            {
+                g.FillRectangle(darkBrush, gameArea);
 
-                g.DrawString("Координаты:", blockFont, titleBrush, x, y);
-                y += 24;
-                g.DrawString("X = " + playerX, textFont, textBrush, x, y);
-                y += 20;
-                g.DrawString("Y = " + playerY, textFont, textBrush, x, y);
+                Rectangle panel = new Rectangle(
+                    gameArea.X + gameArea.Width / 2 - 240,
+                    gameArea.Y + gameArea.Height / 2 - 150,
+                    480,
+                    300
+                );
+
+                g.FillRectangle(panelBrush, panel);
+                g.DrawRectangle(Pens.White, panel);
+
+                StringFormat sf = new StringFormat();
+                sf.Alignment = StringAlignment.Center;
+                sf.LineAlignment = StringAlignment.Center;
+
+                g.DrawString("СИМУЛЯТОР КУРЬЕРА", titleFont, titleBrush, new Rectangle(panel.X, panel.Y + 25, panel.Width, 40), sf);
+                g.DrawString("Мини-игра про доставку заказов по адресам", subFont, accentBrush, new Rectangle(panel.X, panel.Y + 80, panel.Width, 28), sf);
+
+                Rectangle textRect = new Rectangle(panel.X + 35, panel.Y + 130, panel.Width - 70, 90);
+                string info = "Твоя задача — доставить все заказы до конца смены.\nУчитывай время суток: не каждый клиент доступен всегда.\nПодходи к дому и нажимай E.";
+                g.DrawString(info, textFont, textBrush, textRect, sf);
+
+                g.DrawString("Enter — начать смену", subFont, accentBrush, new Rectangle(panel.X, panel.Y + 245, panel.Width, 28), sf);
             }
         }
 
@@ -605,40 +730,36 @@ namespace TimePostman
             using (Brush textBrush = new SolidBrush(Color.Gainsboro))
             using (Brush accentBrush = new SolidBrush(session.GameWon ? Color.LightGreen : Color.Salmon))
             using (Font titleFont = new Font("Arial", 24, FontStyle.Bold))
-            using (Font textFont = new Font("Arial", 12, FontStyle.Regular))
+            using (Font textFont = new Font("Arial", 12))
             using (Font bigFont = new Font("Arial", 16, FontStyle.Bold))
             {
                 g.FillRectangle(darkBrush, gameArea);
 
                 Rectangle panel = new Rectangle(
-                    gameArea.X + gameArea.Width / 2 - 220,
-                    gameArea.Y + gameArea.Height / 2 - 110,
-                    440,
-                    220
+                    gameArea.X + gameArea.Width / 2 - 240,
+                    gameArea.Y + gameArea.Height / 2 - 130,
+                    480,
+                    250
                 );
 
                 g.FillRectangle(panelBrush, panel);
                 g.DrawRectangle(Pens.White, panel);
 
-                string title = session.GameWon ? "СМЕНА ЗАКРЫТА" : "СМЕНА ПРОВАЛЕНА";
+                string title = session.GameWon ? "СМЕНА УСПЕШНО ЗАВЕРШЕНА" : "СМЕНА ЗАКОНЧИЛАСЬ";
                 string line1 = session.GameWon
-                    ? "Ты доставил все заказы."
-                    : "Не все заказы были доставлены вовремя.";
-                string line2 = "Нажми R, чтобы начать новую смену.";
+                    ? "Ты доставил все заказы вовремя."
+                    : "Не все заказы были доставлены до конца смены.";
+                string line2 = "Нажми R, чтобы начать заново.";
 
                 StringFormat sf = new StringFormat();
                 sf.Alignment = StringAlignment.Center;
                 sf.LineAlignment = StringAlignment.Center;
 
-                Rectangle titleRect = new Rectangle(panel.X, panel.Y + 25, panel.Width, 40);
-                Rectangle line1Rect = new Rectangle(panel.X + 20, panel.Y + 85, panel.Width - 40, 30);
-                Rectangle line2Rect = new Rectangle(panel.X + 20, panel.Y + 135, panel.Width - 40, 30);
-                Rectangle statRect = new Rectangle(panel.X + 20, panel.Y + 175, panel.Width - 40, 25);
-
-                g.DrawString(title, titleFont, accentBrush, titleRect, sf);
-                g.DrawString(line1, bigFont, titleBrush, line1Rect, sf);
-                g.DrawString(line2, textFont, textBrush, line2Rect, sf);
-                g.DrawString("Выполнено: " + session.GetDeliveredCount() + " / " + session.Orders.Count, textFont, textBrush, statRect, sf);
+                g.DrawString(title, titleFont, accentBrush, new Rectangle(panel.X + 10, panel.Y + 25, panel.Width - 20, 40), sf);
+                g.DrawString(line1, bigFont, titleBrush, new Rectangle(panel.X + 20, panel.Y + 90, panel.Width - 40, 30), sf);
+                g.DrawString(line2, textFont, textBrush, new Rectangle(panel.X + 20, panel.Y + 135, panel.Width - 40, 25), sf);
+                g.DrawString("Выполнено: " + session.GetDeliveredCount() + " / " + session.Orders.Count, textFont, textBrush, new Rectangle(panel.X + 20, panel.Y + 175, panel.Width - 40, 25), sf);
+                g.DrawString("Осталось времени: " + session.GetMatchSecondsLeft() + " сек", textFont, textBrush, new Rectangle(panel.X + 20, panel.Y + 200, panel.Width - 40, 25), sf);
             }
         }
     }
