@@ -1,12 +1,37 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\User\\Desktop\\TimePostman\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{AB9D1BC4-DB62-4F71-95EC-E0A5C6B818DF}|TestProject.Tests\\TestProject.Tests.csproj|c:\\users\\user\\desktop\\timepostman\\testproject.tests\\gamesessiontests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AB9D1BC4-DB62-4F71-95EC-E0A5C6B818DF}|TestProject.Tests\\TestProject.Tests.csproj|solutionrelative:testproject.tests\\gamesessiontests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GameSessionTests.cs",
+              "DocumentMoniker": "C:\\Users\\User\\Desktop\\TimePostman\\TestProject.Tests\\GameSessionTests.cs",
+              "RelativeDocumentMoniker": "TestProject.Tests\\GameSessionTests.cs",
+              "ToolTip": "C:\\Users\\User\\Desktop\\TimePostman\\TestProject.Tests\\GameSessionTests.cs",
+              "RelativeToolTip": "TestProject.Tests\\GameSessionTests.cs",
+              "ViewState": "AgIAAEcAAAAAAAAAAAAswBAAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-21T12:56:24.75Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }
