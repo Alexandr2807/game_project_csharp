@@ -16,7 +16,6 @@ namespace TimePostman
         public List<Rectangle> Houses { get; } = new List<Rectangle>();
         public List<string> HouseNames { get; } = new List<string>();
         public List<Color> HouseColors { get; } = new List<Color>();
-
         public List<Rectangle> Roads { get; } = new List<Rectangle>();
         public List<Rectangle> TreeTops { get; } = new List<Rectangle>();
 
@@ -36,33 +35,26 @@ namespace TimePostman
                 WindowHeight - mapMarginTop - mapMarginBottom
             );
 
-            UiArea = new Rectangle(
-                GameArea.Right,
-                0,
-                UiWidth,
-                WindowHeight
-            );
+            UiArea = new Rectangle(GameArea.Right, 0, UiWidth, WindowHeight);
 
             int houseW = 92;
             int houseH = 72;
-
             int leftRoadX = GameArea.X + 90;
 
             Roads.Add(new Rectangle(420, GameArea.Y, 130, GameArea.Height));
             Roads.Add(new Rectangle(GameArea.X, 350, GameArea.Width, 100));
             Roads.Add(new Rectangle(leftRoadX, GameArea.Y, 120, GameArea.Height));
 
-            Houses.Add(new Rectangle(285, 255, houseW, houseH)); // 1
-            Houses.Add(new Rectangle(567, 98, houseW, houseH));  // 2
-            Houses.Add(new Rectangle(567, 250, houseW, houseH)); // 3
-            Houses.Add(new Rectangle(283, 486, houseW, houseH)); // 4
-            Houses.Add(new Rectangle(567, 475, houseW, houseH)); // 5
-            Houses.Add(new Rectangle(770, 475, houseW, houseH)); // 6
-
-            Houses.Add(new Rectangle(285, 90, houseW, houseH));  // 7 - над домом 1
-            Houses.Add(new Rectangle(770, 250, houseW, houseH)); // 8 - справа от дома 3
-            Houses.Add(new Rectangle(283, 620, houseW, houseH)); // 9 - под домом 4
-            Houses.Add(new Rectangle(567, 620, houseW, houseH)); // 10 - под домом 5
+            Houses.Add(new Rectangle(285, 255, houseW, houseH));
+            Houses.Add(new Rectangle(567, 98, houseW, houseH));
+            Houses.Add(new Rectangle(567, 250, houseW, houseH));
+            Houses.Add(new Rectangle(283, 486, houseW, houseH));
+            Houses.Add(new Rectangle(567, 475, houseW, houseH));
+            Houses.Add(new Rectangle(770, 475, houseW, houseH));
+            Houses.Add(new Rectangle(285, 90, houseW, houseH));
+            Houses.Add(new Rectangle(770, 250, houseW, houseH));
+            Houses.Add(new Rectangle(283, 620, houseW, houseH));
+            Houses.Add(new Rectangle(567, 620, houseW, houseH));
 
             FillRandomResidentNames();
 

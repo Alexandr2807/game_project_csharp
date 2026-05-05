@@ -8,16 +8,12 @@ namespace TimePostman
         public List<DeliveryOrder> Orders { get; private set; } = new List<DeliveryOrder>();
 
         public TimePhase CurrentPhase { get; private set; } = TimePhase.Morning;
-
         public int PhaseTimerMs { get; private set; }
         public int PhaseDurationMs { get; private set; } = 20000;
-
         public int MatchTimerMs { get; private set; }
         public int MatchDurationMs { get; private set; } = 300000;
-
         public bool GameWon { get; private set; }
         public bool GameLost { get; private set; }
-
         public bool TestMode { get; }
 
         public GameSession(bool testMode)
@@ -99,9 +95,7 @@ namespace TimePostman
         public void AdvanceTime(int deltaMs)
         {
             if (GameWon || GameLost)
-            {
                 return;
-            }
 
             PhaseTimerMs += deltaMs;
             while (PhaseTimerMs >= PhaseDurationMs)
@@ -118,72 +112,53 @@ namespace TimePostman
             }
 
             if (GetDeliveredCount() == Orders.Count)
-            {
                 GameWon = true;
-            }
         }
 
         public DeliveryAttemptResult TryDeliver(int houseIndex)
         {
             if (GameWon || GameLost)
-            {
                 return DeliveryAttemptResult.GameEnded;
-            }
 
             if (houseIndex < 0)
-            {
                 return DeliveryAttemptResult.TooFar;
-            }
 
-            DeliveryOrder? currentOrder = null;
-
-            for (int i = 0; i < Orders.Count; i++)
-            {
-                if (Orders[i].HouseIndex == houseIndex && !Orders[i].Delivered)
-                {
-                    currentOrder = Orders[i];
-                    break;
-                }
-            }
-
+            DeliveryOrder? currentOrder = GetActiveOrderForHouse(houseIndex);
             if (currentOrder == null)
-            {
                 return DeliveryAttemptResult.NoOrder;
-            }
 
             if (!currentOrder.CanDeliverNow(CurrentPhase))
-            {
                 return DeliveryAttemptResult.WrongTime;
-            }
 
             currentOrder.Delivered = true;
 
             if (GetDeliveredCount() == Orders.Count)
-            {
                 GameWon = true;
-            }
 
             return DeliveryAttemptResult.Delivered;
+        }
+
+        public DeliveryOrder? GetActiveOrderForHouse(int houseIndex)
+        {
+            for (int i = 0; i < Orders.Count; i++)
+            {
+                if (Orders[i].HouseIndex == houseIndex && !Orders[i].Delivered)
+                    return Orders[i];
+            }
+
+            return null;
         }
 
         private void NextPhase()
         {
             if (CurrentPhase == TimePhase.Morning)
-            {
                 CurrentPhase = TimePhase.Day;
-            }
             else if (CurrentPhase == TimePhase.Day)
-            {
                 CurrentPhase = TimePhase.Evening;
-            }
             else if (CurrentPhase == TimePhase.Evening)
-            {
                 CurrentPhase = TimePhase.Night;
-            }
             else
-            {
                 CurrentPhase = TimePhase.Morning;
-            }
         }
 
         public string GetPhaseText(TimePhase phase)
@@ -201,9 +176,7 @@ namespace TimePostman
             for (int i = 0; i < order.AllowedPhases.Count; i++)
             {
                 if (i > 0)
-                {
                     text += ", ";
-                }
 
                 text += GetPhaseText(order.AllowedPhases[i]);
             }
@@ -214,45 +187,35 @@ namespace TimePostman
         public int GetDeliveredCount()
         {
             int count = 0;
-
             for (int i = 0; i < Orders.Count; i++)
             {
                 if (Orders[i].Delivered)
-                {
                     count++;
-                }
             }
-
             return count;
         }
 
         public int GetAvailableNowCount()
         {
             int count = 0;
-
             for (int i = 0; i < Orders.Count; i++)
             {
                 if (!Orders[i].Delivered && Orders[i].CanDeliverNow(CurrentPhase))
-                {
                     count++;
-                }
             }
-
             return count;
         }
 
         public int GetMatchSecondsLeft()
         {
             int left = (MatchDurationMs - MatchTimerMs) / 1000;
-            if (left < 0) left = 0;
-            return left;
+            return left < 0 ? 0 : left;
         }
 
         public int GetPhaseSecondsLeft()
         {
             int left = (PhaseDurationMs - PhaseTimerMs) / 1000;
-            if (left < 0) left = 0;
-            return left;
+            return left < 0 ? 0 : left;
         }
 
         public int GetElapsedMatchSeconds()
@@ -263,9 +226,7 @@ namespace TimePostman
         public int GetCompletionPercent()
         {
             if (Orders.Count == 0)
-            {
                 return 0;
-            }
 
             return GetDeliveredCount() * 100 / Orders.Count;
         }
