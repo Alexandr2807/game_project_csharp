@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TimePostman")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8d6b403644229443635041c45c3e12ec900d6605")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+22e622c6df25a622ee5c66437ee8a09489ce4a86")]
 [assembly: System.Reflection.AssemblyProductAttribute("TimePostman")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TimePostman")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
